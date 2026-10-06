@@ -3,3 +3,6 @@
 
 # gdUnit4 output.
 reports/
+
+.DS_Store
+
