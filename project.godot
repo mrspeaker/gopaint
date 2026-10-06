@@ -1,0 +1,13 @@
+; Engine configuration file.
+; Development project for the gopaint addon.
+
+config_version=5
+
+[application]
+
+config/name="gopaint"
+config/features=PackedStringArray("4.7")
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gdUnit4/plugin.cfg", "res://addons/gopaint/plugin.cfg")

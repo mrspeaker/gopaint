@@ -1,0 +1,24 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        godot-version: ["4.5", "4.6", "4.7"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run gdUnit4 tests
+        uses: godot-gdunit-labs/gdUnit4-action@v1.3.2
+        with:
+          godot-version: ${{ matrix.godot-version }}
+          version: installed
+          paths: res://test
+          arguments: --ignoreHeadlessMode
+          report-name: test-report-${{ matrix.godot-version }}.xml

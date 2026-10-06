@@ -1,0 +1,5 @@
+# Godot cache and imports.
+.godot/
+
+# gdUnit4 output.
+reports/
