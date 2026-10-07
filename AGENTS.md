@@ -35,7 +35,7 @@ This repository is a Godot project used for development. Only `addons/gopaint/` 
 - Run all tests: `./run_tests.sh`. Set `GODOT_BIN` to use a different Godot binary.
 - Run one suite: `./run_tests.sh -a res://test/core/image_ops_test.gd`
 - Check that the editor loads the plugin without script errors: `godot --headless --editor --path . --quit`
-- Open the editor with output in the terminal: `godot --editor --path . --verbose`
+- Open the editor: `./run_editor.sh`. Set `GODOT_BIN` to use a different Godot binary. Extra arguments go to Godot, for example `./run_editor.sh --verbose` to show output in the terminal.
 
 Each test run prints `Unable to connect to host '127.0.0.1:0'`. The gdUnit4 runner causes this, and it is not a failure.
 

@@ -10,4 +10,5 @@
 /samples            export-ignore
 /project.godot      export-ignore
 /run_tests.sh       export-ignore
+/run_editor.sh      export-ignore
 /AGENTS.md          export-ignore
