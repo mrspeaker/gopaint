@@ -16,13 +16,15 @@ func before_test() -> void:
 	_canvas._offset = Vector2.ZERO
 
 
-func _drag(button: MouseButton, from: Vector2i, to: Vector2i) -> void:
+func _drag(button: MouseButton, from: Vector2i, to: Vector2i, command := false) -> void:
 	var press := InputEventMouseButton.new()
+	_set_command(press, command)
 	press.button_index = button
 	press.pressed = true
 	press.position = Vector2(from) * 10.0 + Vector2(5, 5)
 	_canvas._gui_input(press)
 	var motion := InputEventMouseMotion.new()
+	_set_command(motion, command)
 	motion.position = Vector2(to) * 10.0 + Vector2(5, 5)
 	_canvas._gui_input(motion)
 	var release := press.duplicate()
@@ -71,3 +73,43 @@ func test_undo_reverts_stroke() -> void:
 	assert_that(_image.get_pixel(0, 0)).is_equal(Color.WHITE)
 	_canvas.redo()
 	assert_that(_image.get_pixel(0, 0)).is_equal(Color.BLACK)
+
+
+func _set_command(event: InputEventWithModifiers, pressed: bool) -> void:
+	if CanvasView._command_key() == KEY_META:
+		event.meta_pressed = pressed
+	else:
+		event.ctrl_pressed = pressed
+
+
+func _command_key(pressed: bool) -> void:
+	var key := InputEventKey.new()
+	key.keycode = CanvasView._command_key()
+	key.pressed = pressed
+	_set_command(key, pressed)
+	_canvas._input(key)
+
+
+func test_holding_command_key_picks_color_then_restores_tool() -> void:
+	add_child(_canvas)
+	_image.set_pixel(2, 2, Color.RED)
+	var changes := []
+	_canvas.active_tool_changed.connect(changes.append)
+	_command_key(true)
+	assert_int(_canvas.get_active_tool()).is_equal(CanvasView.Tool.PICKER)
+	_drag(MOUSE_BUTTON_LEFT, Vector2i(2, 2), Vector2i(2, 2), true)
+	assert_that(_canvas.colors[MOUSE_BUTTON_LEFT]).is_equal(Color.RED)
+	assert_that(_image.get_pixel(2, 2)).is_equal(Color.RED)
+
+	_command_key(false)
+	assert_int(_canvas.get_active_tool()).is_equal(CanvasView.Tool.PENCIL)
+	assert_array(changes).is_equal([CanvasView.Tool.PICKER, CanvasView.Tool.PENCIL])
+	_drag(MOUSE_BUTTON_LEFT, Vector2i(0, 0), Vector2i(0, 0))
+	assert_that(_image.get_pixel(0, 0)).is_equal(Color.RED)
+
+
+func test_mouse_event_without_modifier_releases_picker() -> void:
+	add_child(_canvas)
+	_command_key(true)
+	_canvas._gui_input(InputEventMouseMotion.new())
+	assert_int(_canvas.get_active_tool()).is_equal(CanvasView.Tool.PENCIL)

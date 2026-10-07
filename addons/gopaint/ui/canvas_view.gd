@@ -2,10 +2,12 @@
 extends Control
 
 ## Shows the image and turns mouse input into drawing. Wheel zooms, middle button pans.
+## Holding Ctrl (Cmd on macOS) switches to the color picker until it is released.
 
 signal color_picked(button: MouseButton, color: Color)
 signal image_changed
 signal zoom_changed(zoom: float)
+signal active_tool_changed(tool: Tool)
 
 enum Tool { PENCIL, ERASER, FILL, PICKER, LINE, RECT }
 
@@ -40,6 +42,8 @@ var _stroke_button := MOUSE_BUTTON_NONE
 var _stroke_start: Vector2i
 var _stroke_last: Vector2i
 var _stroke_base: Image
+var _stroke_tool := Tool.PENCIL
+var _picker_held := false
 
 
 func _init() -> void:
@@ -156,7 +160,42 @@ func _draw_grid(area: Rect2) -> void:
 	draw_multiline(lines, GRID_COLOR)
 
 
+## The tool that mouse presses use. Holding Ctrl or Cmd gives the color picker.
+func get_active_tool() -> Tool:
+	return Tool.PICKER if _picker_held else tool
+
+
+# Uses _input so the key works without the canvas having focus. Does not consume it.
+func _input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	if key and is_visible_in_tree():
+		if key.keycode == _command_key():
+			_set_picker_held(key.pressed)
+		else:
+			_set_picker_held(key.is_command_or_control_pressed())
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_VISIBILITY_CHANGED:
+		_set_picker_held(false)
+
+
+func _set_picker_held(held: bool) -> void:
+	if held == _picker_held:
+		return
+	_picker_held = held
+	active_tool_changed.emit(get_active_tool())
+
+
+static func _command_key() -> Key:
+	return KEY_META if OS.get_name() == "macOS" else KEY_CTRL
+
+
 func _gui_input(event: InputEvent) -> void:
+	# Mouse events carry the modifier state, which fixes a missed key release.
+	var with_modifiers := event as InputEventWithModifiers
+	if with_modifiers and not event is InputEventKey:
+		_set_picker_held(with_modifiers.is_command_or_control_pressed())
 	if _image == null:
 		return
 	var button := event as InputEventMouseButton
@@ -200,7 +239,8 @@ func _in_image(pixel: Vector2i) -> bool:
 
 
 func _start_stroke(button: MouseButton, pixel: Vector2i) -> void:
-	match tool:
+	_stroke_tool = get_active_tool()
+	match _stroke_tool:
 		Tool.PICKER:
 			if _in_image(pixel):
 				colors[button] = _image.get_pixelv(pixel)
@@ -217,14 +257,14 @@ func _start_stroke(button: MouseButton, pixel: Vector2i) -> void:
 	_stroke_button = button
 	_stroke_start = pixel
 	_stroke_last = pixel
-	if tool == Tool.LINE or tool == Tool.RECT:
+	if _stroke_tool == Tool.LINE or _stroke_tool == Tool.RECT:
 		_stroke_base = History.copy_image(_image)
 	_continue_stroke(pixel)
 
 
 func _continue_stroke(pixel: Vector2i) -> void:
 	var color: Color = colors[_stroke_button]
-	match tool:
+	match _stroke_tool:
 		Tool.PENCIL:
 			ImageOps.draw_line(_image, _stroke_last, pixel, brush_size, color)
 		Tool.ERASER:

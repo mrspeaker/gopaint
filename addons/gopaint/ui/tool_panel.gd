@@ -87,6 +87,12 @@ func _notification(what: int) -> void:
 
 
 ## Updates the color shown for a mouse button, for example after using the picker.
+## Shows tool as selected without sending tool_selected.
+func show_tool(tool: int) -> void:
+	for i in TOOLS.size():
+		_tool_buttons[i].set_pressed_no_signal(TOOLS[i][0] == tool)
+
+
 func set_color(button: MouseButton, color: Color) -> void:
 	_color_buttons[button].color = color
 

@@ -13,7 +13,7 @@ This repository is a Godot project used for development. Only `addons/gopaint/` 
     - `image_ops.gd`: flood fill, brush stamp, line and rectangle drawing.
     - `history.gd`: undo and redo, stored as full image copies.
   - `ui/`: editor UI. The layout follows the GameMaker image editor.
-    - `main_screen.gd`: toolbar at the top (new, save, undo, redo, zoom, grid), tool panel on the left, canvas on the right.
+    - `main_screen.gd`: toolbar at the top (new, save, save as, undo, redo, zoom, grid), tool panel on the left, canvas on the right.
     - `tool_panel.gd`: tool buttons, brush size, colors for the left and right mouse buttons, palette.
     - `canvas_view.gd`: draws the image, checkerboard and grid. Turns mouse input into tool actions.
     - `new_image_dialog.gd`: `FileDialog` for a new PNG's path, with width and height fields.
@@ -61,10 +61,11 @@ To check the UI visually without the editor, write a `SceneTree` script outside 
 ## Status
 
 - Tools: pencil, eraser, fill, color picker, line, rectangle (outline or filled). Each mouse button has its own color.
+- Holding Ctrl (Cmd on macOS) switches to the color picker. Releasing it returns to the selected tool.
 - Drawing replaces pixels, including alpha. It does not blend. Images are converted to RGBA8 when opened.
 - Selecting the open file again keeps unsaved edits. Selecting a different file or creating a new one discards them without a warning.
 - New creates a blank transparent PNG (default 64 x 64) and opens it.
-- Saving writes the PNG. `plugin.gd` then reimports it, or runs a filesystem scan for a new file, so Godot sees the change.
+- Saving writes the PNG. Save As writes a PNG to a new path, which becomes the open file. Undo history is kept. `plugin.gd` then reimports it, or runs a filesystem scan for a new file, so Godot sees the change.
 - Undo and redo use GoPaint's own history and toolbar buttons. Ctrl+Z goes to the editor's history, not GoPaint's.
-- Not tried by hand in the editor yet: editor icons, the color picker popup, saving, and the scan that adds a new file to the FileSystem dock.
+- Not tried by hand in the editor yet: the Ctrl or Cmd picker, editor icons, the color picker popup, saving, and the scan that adds a new file to the FileSystem dock.
 - Not done yet: keyboard shortcuts, `EditorUndoRedoManager`, resizing, a warning before unsaved changes are replaced, layers, animation frames (`SpriteFrames`).

@@ -15,9 +15,11 @@ var _dirty := false
 var _canvas: CanvasView
 var _tools: ToolPanel
 var _new_dialog: NewImageDialog
+var _save_as_dialog: FileDialog
 var _file_label: Label
 var _zoom_label: Label
 var _save_button: Button
+var _save_as_button: Button
 var _undo_button: Button
 var _redo_button: Button
 var _icon_buttons := {}
@@ -33,6 +35,13 @@ func _init() -> void:
 	_new_dialog = NewImageDialog.new()
 	_new_dialog.image_requested.connect(create_image)
 	add_child(_new_dialog)
+	_save_as_dialog = FileDialog.new()
+	_save_as_dialog.title = "Save Image As"
+	_save_as_dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE
+	_save_as_dialog.access = FileDialog.ACCESS_RESOURCES
+	_save_as_dialog.filters = PackedStringArray(["*.png ; PNG Images"])
+	_save_as_dialog.file_selected.connect(save_as)
+	add_child(_save_as_dialog)
 
 	add_child(_make_toolbar())
 	var body := HBoxContainer.new()
@@ -47,6 +56,7 @@ func _init() -> void:
 	_tools.color_changed.connect(func(button: MouseButton, color: Color) -> void:
 		_canvas.colors[button] = color)
 	_canvas.color_picked.connect(_tools.set_color)
+	_canvas.active_tool_changed.connect(_tools.show_tool)
 	_canvas.image_changed.connect(_on_image_changed)
 	_canvas.zoom_changed.connect(func(zoom: float) -> void:
 		_zoom_label.text = "%d%%" % roundi(zoom * 100))
@@ -101,6 +111,29 @@ func save() -> void:
 	saved.emit(_path)
 
 
+## Saves the image as a PNG at path. The new file becomes the open asset.
+func save_as(path: String) -> void:
+	if _image == null:
+		return
+	if path.get_extension().to_lower() != "png":
+		path += ".png"
+	var err := _image.save_png(path)
+	if err != OK:
+		push_error("GoPaint: could not save %s: %s" % [path, error_string(err)])
+		return
+	_path = path
+	_dirty = false
+	_update_buttons()
+	saved.emit(path)
+
+
+func _open_save_as_dialog() -> void:
+	var file := _path.get_file().get_basename() + ".png" if _path != "" else "image.png"
+	var dir := _path.get_base_dir() if _path != "" else "res://"
+	_save_as_dialog.current_path = dir.path_join(file)
+	_save_as_dialog.popup_centered_ratio(0.5)
+
+
 func _set_image(image: Image, path: String) -> void:
 	_image = image
 	_path = path
@@ -120,6 +153,7 @@ func _on_image_changed() -> void:
 
 func _update_buttons() -> void:
 	_save_button.disabled = not (_can_save() and _dirty)
+	_save_as_button.disabled = _image == null
 	_undo_button.disabled = not _canvas.history.can_undo()
 	_redo_button.disabled = not _canvas.history.can_redo()
 	if _image == null:
@@ -135,6 +169,7 @@ func _make_toolbar() -> HBoxContainer:
 	_add_button(bar, "New", "New image", func() -> void:
 		_new_dialog.open(_path.get_base_dir() if _path != "" else "res://"))
 	_save_button = _add_button(bar, "Save", "Save", save)
+	_save_as_button = _add_button(bar, "", "Save As", _open_save_as_dialog)
 	bar.add_child(VSeparator.new())
 	_undo_button = _add_button(bar, "Undo", "Undo", func() -> void:
 		_canvas.undo())
